@@ -1,0 +1,7 @@
+{
+  "username": "your_username_here",
+  "password": "your_password_here",
+  "headless": false,
+  "autoConfirm": false,
+  "maxPrice": 50000
+}
