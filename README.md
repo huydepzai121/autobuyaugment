@@ -11,13 +11,17 @@ Tool tự động mua tài khoản trên website augmentgateway.1app.space
 - ✅ Tự động mua tài khoản (nếu bật autoConfirm)
 - ✅ Giới hạn giá tối đa cho phép mua
 - ✅ Hiển thị chi tiết quá trình thực hiện
+- ✅ Hỗ trợ 2 engine: **Playwright** (khuyến nghị) và Puppeteer
 
 ## Yêu cầu hệ thống
 
 - Node.js (phiên bản 14 trở lên)
 - npm hoặc yarn
+- Windows/Linux/macOS
 
 ## Cài đặt
+
+### Phương án 1: Playwright (KHUYẾN NGHỊ - Ổn định trên Windows)
 
 1. Clone hoặc tải repository này về máy
 
@@ -25,6 +29,20 @@ Tool tự động mua tài khoản trên website augmentgateway.1app.space
 
 ```bash
 npm install
+```
+
+3. Cài đặt browser cho Playwright:
+
+```bash
+npx playwright install chromium
+```
+
+### Phương án 2: Puppeteer
+
+Nếu bạn gặp lỗi khi cài Puppeteer trên Windows, hãy dùng **Playwright** (phương án 1).
+
+```bash
+npm install puppeteer
 ```
 
 ## Cấu hình
@@ -61,7 +79,7 @@ cp config.example.json config.json
 
 ## Sử dụng
 
-Chạy tool bằng lệnh:
+### Chạy với Playwright (mặc định - khuyến nghị):
 
 ```bash
 npm start
@@ -70,7 +88,19 @@ npm start
 hoặc
 
 ```bash
-node auto-buy.js
+node auto-buy-playwright.js
+```
+
+### Chạy với Puppeteer:
+
+```bash
+npm run start:puppeteer
+```
+
+hoặc
+
+```bash
+node auto-buy-puppeteer.js
 ```
 
 ## Quy trình hoạt động
@@ -98,7 +128,7 @@ Khi bạn đã kiểm tra kỹ và muốn tự động mua, hãy:
 ## Ví dụ kết quả
 
 ```
-🚀 Khởi động tool tự động mua tài khoản...
+🚀 Khởi động tool tự động mua tài khoản (Playwright)...
 📍 Đang truy cập trang đăng nhập...
 🔐 Đang đăng nhập...
 ✅ Đã click nút đăng nhập
@@ -133,15 +163,33 @@ Khi bạn đã kiểm tra kỹ và muốn tự động mua, hãy:
 
 Nếu gặp lỗi:
 
-1. **Không tìm thấy config.json**
+1. **Lỗi khi cài đặt Puppeteer (npm error code 3221225786 hoặc tương tự)**
+   - Đây là lỗi phổ biến trên Windows khi Puppeteer tải Chrome binary
+   - **GIẢI PHÁP**: Sử dụng Playwright thay vì Puppeteer:
+   ```bash
+   npm install
+   npx playwright install chromium
+   npm start  # Chạy với Playwright
+   ```
+
+2. **Không tìm thấy config.json**
    - Đảm bảo đã copy `config.example.json` thành `config.json`
 
-2. **Đăng nhập thất bại**
+3. **Đăng nhập thất bại**
    - Kiểm tra lại username/password trong `config.json`
 
-3. **Không tìm thấy element**
+4. **Không tìm thấy element**
    - Website có thể đã thay đổi giao diện
    - Liên hệ để cập nhật tool
+
+## So sánh Playwright vs Puppeteer
+
+| Tính năng | Playwright ⭐ | Puppeteer |
+|-----------|---------------|-----------|
+| Ổn định trên Windows | ✅ Rất tốt | ⚠️ Hay lỗi khi cài đặt |
+| Tốc độ | ⚡ Nhanh hơn | Nhanh |
+| Cài đặt | Dễ dàng | Khó trên Windows |
+| Khuyến nghị | ✅ Nên dùng | Chỉ khi Playwright không hoạt động |
 
 ## License
 

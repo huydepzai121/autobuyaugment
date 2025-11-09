@@ -2,19 +2,23 @@
   "name": "auto-buy-augment",
   "version": "1.0.0",
   "description": "Tool tự động mua tài khoản trên augmentgateway.1app.space",
-  "main": "auto-buy.js",
+  "main": "auto-buy-playwright.js",
   "scripts": {
-    "start": "node auto-buy.js",
+    "start": "node auto-buy-playwright.js",
+    "start:puppeteer": "node auto-buy-puppeteer.js",
     "install-deps": "npm install"
   },
   "keywords": [
     "automation",
-    "puppeteer",
+    "playwright",
     "auto-buy"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {
     "puppeteer": "^21.5.2"
   }
 }

@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
@@ -24,22 +24,23 @@ async function main() {
 
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-  console.log('🚀 Khởi động tool tự động mua tài khoản...');
+  console.log('🚀 Khởi động tool tự động mua tài khoản (Playwright)...');
 
   // Khởi tạo browser
-  const browser = await puppeteer.launch({
-    headless: config.headless || false,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  const browser = await chromium.launch({
+    headless: config.headless || false
   });
 
   try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1366, height: 768 });
+    const context = await browser.newContext({
+      viewport: { width: 1366, height: 768 }
+    });
+    const page = await context.newPage();
 
     // Bước 1: Truy cập trang đăng nhập
     console.log('📍 Đang truy cập trang đăng nhập...');
     await page.goto('https://augmentgateway.1app.space/#/login', {
-      waitUntil: 'networkidle2',
+      waitUntil: 'networkidle',
       timeout: 30000
     });
 
@@ -50,21 +51,22 @@ async function main() {
 
     // Nhập username
     await page.waitForSelector('input[name="username"]', { timeout: 10000 });
-    await page.type('input[name="username"]', config.username);
+    await page.fill('input[name="username"]', config.username);
     await delay(500);
 
     // Nhập password
-    await page.type('input[name="password"]', config.password);
+    await page.fill('input[name="password"]', config.password);
     await delay(500);
 
     // Click nút đăng nhập
-    // Tìm button submit có text-center
-    const loginButton = await page.$('button .q-btn__content.text-center');
-    if (loginButton) {
+    const loginButton = page.locator('button .q-btn__content.text-center').first();
+    const isVisible = await loginButton.isVisible().catch(() => false);
+
+    if (isVisible) {
       await loginButton.click();
       console.log('✅ Đã click nút đăng nhập');
     } else {
-      // Fallback: tìm button chứa q-btn__content
+      // Fallback: tìm button đầu tiên
       await page.click('button');
       console.log('✅ Đã click nút đăng nhập (fallback)');
     }
@@ -75,7 +77,7 @@ async function main() {
     // Bước 3: Chuyển đến trang augment-gateway
     console.log('📍 Đang chuyển đến trang mua tài khoản...');
     await page.goto('https://augmentgateway.1app.space/#/augment-gateway', {
-      waitUntil: 'networkidle2',
+      waitUntil: 'networkidle',
       timeout: 30000
     });
 
@@ -85,9 +87,9 @@ async function main() {
     console.log('🔍 Đang tìm tab "Mua"...');
 
     // Tìm tab có text "Mua"
-    const tabs = await page.$$('.q-tab');
+    const tabs = await page.locator('.q-tab').all();
     for (let tab of tabs) {
-      const text = await tab.evaluate(el => el.textContent);
+      const text = await tab.textContent();
       if (text.includes('Mua')) {
         await tab.click();
         console.log('✅ Đã click vào tab "Mua"');
@@ -101,14 +103,14 @@ async function main() {
     console.log('💰 Đang kiểm tra số dư...');
     await page.waitForSelector('.balance-amount', { timeout: 10000 });
 
-    const balanceText = await page.$eval('.balance-amount', el => el.textContent);
+    const balanceText = await page.locator('.balance-amount').textContent();
     const currentBalance = parsePrice(balanceText);
     console.log(`💵 Số dư hiện tại: ${balanceText} (${currentBalance} VNĐ)`);
 
     // Bước 6: Lấy danh sách tài khoản
     console.log('📋 Đang quét danh sách tài khoản...');
 
-    const accounts = await page.$$eval('tbody tr', rows => {
+    const accounts = await page.locator('tbody tr').evaluateAll(rows => {
       return rows.map((row, index) => {
         const emailCell = row.querySelector('td:nth-child(1) span');
         const creatorCell = row.querySelector('td:nth-child(2) .text-weight-medium');
@@ -181,7 +183,7 @@ async function main() {
     console.log('🛒 Đang thực hiện mua tài khoản...');
 
     // Click nút mua của tài khoản đã chọn
-    const buyButtons = await page.$$('button[name="buy-account-btn"]');
+    const buyButtons = await page.locator('button[name="buy-account-btn"]').all();
     if (buyButtons[accountIndex]) {
       await buyButtons[accountIndex].click();
       console.log('✅ Đã click nút "Mua tài khoản này"');
@@ -189,9 +191,11 @@ async function main() {
       await delay(2000);
 
       // Kiểm tra xem có dialog xác nhận không
-      const confirmButton = await page.$('button.bg-positive');
-      if (confirmButton) {
-        const buttonText = await confirmButton.evaluate(el => el.textContent);
+      const confirmButton = page.locator('button.bg-positive').first();
+      const isConfirmVisible = await confirmButton.isVisible().catch(() => false);
+
+      if (isConfirmVisible) {
+        const buttonText = await confirmButton.textContent();
         if (buttonText.includes('Xác nhận') || buttonText.includes('Đồng ý')) {
           await confirmButton.click();
           console.log('✅ Đã xác nhận mua');
