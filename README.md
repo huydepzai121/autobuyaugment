@@ -172,15 +172,24 @@ Nếu gặp lỗi:
    npm start  # Chạy với Playwright
    ```
 
-2. **Không tìm thấy config.json**
+2. **Không đăng nhập được / Không tìm thấy số dư**
+   - Tool sẽ tự động chụp screenshot (debug-*.png) để giúp bạn debug
+   - Đặt `"headless": false` trong config.json để xem trình duyệt
+   - Kiểm tra username/password có đúng không
+   - Xem file [TROUBLESHOOTING.md](TROUBLESHOOTING.md) để biết chi tiết
+
+3. **Không tìm thấy config.json**
    - Đảm bảo đã copy `config.example.json` thành `config.json`
 
-3. **Đăng nhập thất bại**
+4. **Đăng nhập thất bại**
    - Kiểm tra lại username/password trong `config.json`
+   - Thử đăng nhập thủ công trên web trước
 
-4. **Không tìm thấy element**
+5. **Không tìm thấy element**
    - Website có thể đã thay đổi giao diện
    - Liên hệ để cập nhật tool
+
+📖 **Xem hướng dẫn chi tiết**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
 ## So sánh Playwright vs Puppeteer
 
