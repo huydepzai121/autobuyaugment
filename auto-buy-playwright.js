@@ -56,23 +56,46 @@ async function main() {
 
     // Nhập password
     await page.fill('input[name="password"]', config.password);
-    await delay(500);
+    await delay(1000);
 
-    // Click nút đăng nhập
-    const loginButton = page.locator('button .q-btn__content.text-center').first();
-    const isVisible = await loginButton.isVisible().catch(() => false);
+    // Click nút đăng nhập - tìm button chứa q-btn__content
+    console.log('🔍 Đang tìm nút đăng nhập...');
 
-    if (isVisible) {
-      await loginButton.click();
-      console.log('✅ Đã click nút đăng nhập');
+    // Thử nhiều cách tìm button
+    let loginSuccess = false;
+
+    // Cách 1: Tìm button type submit
+    const submitButton = page.locator('button[type="submit"]').first();
+    if (await submitButton.isVisible().catch(() => false)) {
+      await submitButton.click();
+      console.log('✅ Đã click nút đăng nhập (submit button)');
+      loginSuccess = true;
     } else {
-      // Fallback: tìm button đầu tiên
-      await page.click('button');
-      console.log('✅ Đã click nút đăng nhập (fallback)');
+      // Cách 2: Tìm button chứa text "Đăng nhập" hoặc có q-btn__content
+      const btnWithContent = page.locator('button:has(.q-btn__content)').first();
+      if (await btnWithContent.isVisible().catch(() => false)) {
+        await btnWithContent.click();
+        console.log('✅ Đã click nút đăng nhập (q-btn__content)');
+        loginSuccess = true;
+      } else {
+        // Cách 3: Fallback - tìm button trong form
+        await page.locator('button').first().click();
+        console.log('✅ Đã click nút đăng nhập (fallback)');
+        loginSuccess = true;
+      }
     }
 
-    // Đợi chuyển trang sau khi đăng nhập
+    // Đợi chuyển trang sau khi đăng nhập - chờ URL thay đổi hoặc element mới xuất hiện
+    console.log('⏳ Đang chờ đăng nhập...');
     await delay(3000);
+
+    // Kiểm tra xem có còn ở trang login không
+    const stillOnLogin = await page.locator('input[name="username"]').isVisible().catch(() => false);
+    if (stillOnLogin) {
+      console.log('⚠️ Vẫn còn ở trang đăng nhập - có thể sai username/password!');
+      await page.screenshot({ path: 'debug-login-failed.png' });
+      console.log('📸 Đã lưu screenshot: debug-login-failed.png');
+    }
 
     // Bước 3: Chuyển đến trang augment-gateway
     console.log('📍 Đang chuyển đến trang mua tài khoản...');
@@ -86,22 +109,52 @@ async function main() {
     // Bước 4: Click vào tab "Mua"
     console.log('🔍 Đang tìm tab "Mua"...');
 
+    // Chờ tabs load
+    await page.waitForSelector('.q-tab', { timeout: 10000 }).catch(async () => {
+      console.log('⚠️ Không tìm thấy tabs, chụp screenshot...');
+      await page.screenshot({ path: 'debug-no-tabs.png' });
+      console.log('📸 Đã lưu screenshot: debug-no-tabs.png');
+    });
+
     // Tìm tab có text "Mua"
     const tabs = await page.locator('.q-tab').all();
+    let foundBuyTab = false;
     for (let tab of tabs) {
       const text = await tab.textContent();
-      if (text.includes('Mua')) {
+      if (text && text.includes('Mua')) {
         await tab.click();
         console.log('✅ Đã click vào tab "Mua"');
+        foundBuyTab = true;
         break;
       }
+    }
+
+    if (!foundBuyTab) {
+      console.log('⚠️ Không tìm thấy tab "Mua", có thể tab đã được chọn sẵn');
     }
 
     await delay(2000);
 
     // Bước 5: Lấy số dư hiện tại
     console.log('💰 Đang kiểm tra số dư...');
-    await page.waitForSelector('.balance-amount', { timeout: 10000 });
+
+    // Chờ balance load với timeout dài hơn và có fallback
+    const balanceFound = await page.waitForSelector('.balance-amount', { timeout: 10000 }).catch(async () => {
+      console.log('⚠️ Không tìm thấy số dư, chụp screenshot...');
+      await page.screenshot({ path: 'debug-no-balance.png' });
+      console.log('📸 Đã lưu screenshot: debug-no-balance.png');
+      console.log('🔍 URL hiện tại:', page.url());
+      return null;
+    });
+
+    if (!balanceFound) {
+      console.error('❌ Không tìm thấy thông tin số dư. Vui lòng kiểm tra:');
+      console.error('   1. Username/password có đúng không');
+      console.error('   2. Đã đăng nhập thành công chưa');
+      console.error('   3. Xem file screenshot debug-*.png để kiểm tra');
+      await browser.close();
+      return;
+    }
 
     const balanceText = await page.locator('.balance-amount').textContent();
     const currentBalance = parsePrice(balanceText);
